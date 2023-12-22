@@ -93,6 +93,7 @@ class SemanticMetaTags {
 		);
 
 		$hookRegistry->register();
+		
 
 	}
 
