@@ -43,15 +43,7 @@
 			"dev-master": "3.x-dev"
 		}
 	},
-	"autoload": {
-		"files" : [
-			"DefaultSettings.php",
-			"SemanticMetaTags.php"
-		],
-		"psr-4": {
-			"SMT\\": "src/"
-		}
-	},
+	"autoload": {},
 	"config": {
 		"process-timeout": 0,
 		"allow-plugins": {
