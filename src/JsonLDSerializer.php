@@ -11,7 +11,6 @@ use Exception;
 use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use SMW\Exporter\ExporterFactory;
 
@@ -46,22 +45,21 @@ class JsonLDSerializer {
 		if ( !class_exists( '\EasyRdf\Graph' ) || !class_exists( '\ML\JsonLD\JsonLD' ) ) {
 			return;
 		}
-
 		// @see SMW\Query\ResultPrinters\RdfResultPrinter
 		$exporterFactory = new ExporterFactory();
 		$serializer = $exporterFactory->newRDFXMLSerializer();
 		$export_controller = $exporterFactory->newExportController( $serializer );
 
 		$outputPage->disable();
-    	ob_start();
+		ob_start();
 
 		try {
-		    $recursive = true;
-		    $export_controller->enableBacklinks( false );
-		    $revisionDate = false;
-		    $pages = [ $title->getFullText() ];
-		    $export_controller->printPages( $pages, $recursive, $revisionDate );
-    
+			$recursive = true;
+			$export_controller->enableBacklinks( false );
+			$revisionDate = false;
+			$pages = [ $title->getFullText() ];
+			$export_controller->printPages( $pages, $recursive, $revisionDate );
+
 		} catch ( Exception $e ) {
 			ob_end_clean();
 			LoggerFactory::getInstance( 'smt' )->error( 'SMW ExporterFactory error: ' . $e->getMessage() );
