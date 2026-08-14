@@ -13,6 +13,7 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
+use SMW\Exporter\ExporterFactory;
 
 class JsonLDSerializer {
 	/**
@@ -46,37 +47,47 @@ class JsonLDSerializer {
 			return;
 		}
 
-		// @TODO use directly the function makeExportDataForSubject
-		// SemanticMediawiki/includes/export/SMW_Exporter.php
-		$export_rdf = SpecialPage::getTitleFor( 'ExportRDF' );
-		if ( $export_rdf->isKnown() ) {
-			$export_url = $export_rdf->getFullURL( [
-				'page' => $title->getFullText(),
-				'recursive' => '1',
-				'backlinks' => 0
-			], false, PROTO_FALLBACK );
+		// @see SMW\Query\ResultPrinters\RdfResultPrinter
+		$exporterFactory = new ExporterFactory();
+		$serializer = $exporterFactory->newRDFXMLSerializer();
+		$export_controller = $exporterFactory->newExportController( $serializer );
 
-			try {
-				$foaf = new \EasyRdf\Graph( $export_url );
-				$foaf->load();
+		$outputPage->disable();
+    	ob_start();
 
-				$format = \EasyRdf\Format::getFormat( 'jsonld' );
-				$output = $foaf->serialise( $format, [
-					'compact' => true,
-				] );
+		try {
+		    $recursive = true;
+		    $export_controller->enableBacklinks( false );
+		    $revisionDate = false;
+		    $pages = [ $title->getFullText() ];
+		    $export_controller->printPages( $pages, $recursive, $revisionDate );
+    
+		} catch ( Exception $e ) {
+			ob_end_clean();
+			LoggerFactory::getInstance( 'smt' )->error( 'SMW ExporterFactory error: ' . $e->getMessage() );
+			return;
+		}
 
-			} catch ( Exception $e ) {
-				LoggerFactory::getInstance( 'smt' )->error( 'EasyRdf error: ' . $export_url );
-				return;
-			}
+		$data = ob_get_clean();
 
-			// https://hotexamples.com/examples/-/EasyRdf_Graph/serialise/php-easyrdf_graph-serialise-method-examples.html
-			if ( is_scalar( $output ) ) {
-				$outputPage->addHeadItem( 'json-ld', Html::Element(
-						'script', [ 'type' => 'application/ld+json' ], $output
-					)
-				);
-			}
+		try {
+			$foaf = new \EasyRdf\Graph( $title->getFullUrl(), $data );
+			$format = \EasyRdf\Format::getFormat( 'jsonld' );
+			$output = $foaf->serialise( $format, [
+				'compact' => true,
+			] );
+
+		} catch ( Exception $e ) {
+			LoggerFactory::getInstance( 'smt' )->error( 'EasyRdf error: ' . $e->getMessage() );
+			return;
+		}
+
+		// https://hotexamples.com/examples/-/EasyRdf_Graph/serialise/php-easyrdf_graph-serialise-method-examples.html
+		if ( is_scalar( $output ) ) {
+			$outputPage->addHeadItem( 'json-ld', Html::Element(
+					'script', [ 'type' => 'application/ld+json' ], $output
+				)
+			);
 		}
 	}
 }
