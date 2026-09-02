@@ -48,6 +48,7 @@ class JsonLDSerializer {
 			case 'LocalServerObjectCache':
 				return MediaWikiServices::getInstance()->getLocalServerObjectCache();
 
+			// @see https://github.com/SemanticMediaWiki/SemanticMetaTags/pull/118
 			case 'WANObjectCache':
 				return MediaWikiServices::getInstance()->getMainWANObjectCache();
 
